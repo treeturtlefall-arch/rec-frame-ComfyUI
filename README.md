@@ -125,13 +125,13 @@ All fonts are self-contained in `fonts/` (SIL Open Font License 1.1):
 
 ## Official Workflows (ComfyUI Desktop Ready)
 
-Ready-to-use workflows are included in [`workflows/`](./workflows/) and automatically synced to ComfyUI Desktop's workflow browser under `rec-frame/`:
+Ready-to-use workflows in both **English (`_en.json`)** and **Japanese (`_ja.json`)** are included in [`workflows/`](./workflows/) and automatically synced to ComfyUI Desktop's workflow browser under `rec-frame/`:
 
-1. **Basic Still Image Workflow ([`rec_frame_basic_workflow.json`](./workflows/rec_frame_basic_workflow.json))**
+1. **Basic Still Image Workflow** ([`rec_frame_basic_workflow_en.json`](./workflows/rec_frame_basic_workflow_en.json) / [JA](workflows/rec_frame_basic_workflow_ja.json))
    - `Load Image` → `RecFrameImageOverlay` & `RecFramePreview` → `Save Image`.
-2. **2000s Digicam Preset Workflow ([`rec_frame_2000s_digicam_workflow.json`](./workflows/rec_frame_2000s_digicam_workflow.json))**
-   - Features `VT323` dot font, `retro_effect: 2`, center crosshair, 2-bar battery, and backdrop boxes.
-3. **Video Animation Batch Workflow ([`rec_frame_video_batch_workflow.json`](./workflows/rec_frame_video_batch_workflow.json))**
+2. **2000s Digicam Preset Workflow** ([`rec_frame_2000s_digicam_workflow_en.json`](./workflows/rec_frame_2000s_digicam_workflow_en.json) / [JA](workflows/rec_frame_2000s_digicam_workflow_ja.json))
+   - Features `Share Tech Mono` / `VT323` dot font, `retro_effect: 2`, `STBY` indicator, 3-bar battery, and backdrop boxes.
+3. **Video Animation Batch Workflow** ([`rec_frame_video_batch_workflow_en.json`](./workflows/rec_frame_video_batch_workflow_en.json) / [JA](workflows/rec_frame_video_batch_workflow_ja.json))
    - Complete video pipeline with `RecFrameVideoOverlay` (`blink_red_dot_interval: 24`, `advance_timecode_fps: 24.0`).
 
 ---

@@ -1,5 +1,5 @@
 {
-  "id": "rec-frame-video-batch-workflow",
+  "id": "rec-frame-video-batch-workflow-ja",
   "revision": 0,
   "last_node_id": 21,
   "last_link_id": 7,
@@ -24,7 +24,7 @@
         "Node name for S&R": "Note"
       },
       "widgets_values": [
-        "【動画・バッチフレーム用 REC枠合成ワークフロー】\n\n動画ファイル (.mp4 / .webm 等) を読み込み、ファインダー枠・赤丸REC点滅・\nリアルタイム進行タイムコードをオーバーレイ合成して動画出力します。\n\n■ 動画の指定・読み込み:\n- '2. 入力動画' グループの 'Load Video' で動画ファイルを指定（ドラッグ＆ドロップまたは選択）。\n- 'Get Video Components' がフレーム画像・音声・FPSを自動抽出して後続へ渡します。\n\n■ 設定済みの動画用パラメータ:\n- blink_red_dot_interval: 24\n  ・赤丸RECマークの点滅間隔 (フレーム数)\n  ・24fps設定時、24フレーム (1.0秒) ごとに点灯と消灯を繰り返します。\n  ・消灯時もレイアウト崩れや文字ズレは起きません。\n- advance_timecode_fps: 24.0\n  ・フレーム進行に伴うタイムコード秒数の自動加算 FPS\n  ・24フレーム経過するごとにタイムコードが1秒ずつリアルに進みます。\n- timecode_mode: 'now (現在時刻を自動取得)'\n  ・撮影開始日時を現在時刻から自動取得し、秒単位でカウントアップします。\n\n■ リアルタイム枠プレビュー:\n- RecFrameVideoOverlay 直下の 'Preview REC Overlay' で、Queue を押さずに枠の太さやフォントをその場でダイナミック確認できます。\n\n■ 動画の保存 & 出力:\n- 'Create Video' と 'Save Video' により、元の音声とフレームレートを維持したまま、完成動画 (MP4等) として自動保存されます。"
+        "【動画・バッチフレーム用 REC枠合成ワークフロー】\n\n動画ファイル (.mp4 / .webm 等) を読み込み、ファインダー枠・赤丸REC点滅・\nリアルタイム進行タイムコードをオーバーレイ合成して動画出力します。\n\n■ 動画の指定・読み込み:\n- '2. 入力動画 & 分割' グループの 'Load Video' で動画ファイルを指定（ドラッグ＆ドロップまたは選択）。\n- 'Get Video Components' がフレーム画像・音声・FPSを自動抽出して後続へ渡します。\n\n■ 設定済みの動画用パラメータ:\n- blink_red_dot_interval: 24\n  ・赤丸RECマークの点滅間隔 (フレーム数)\n  ・24fps設定時、24フレーム (1.0秒) ごとに点灯と消灯を繰り返します。\n  ・消灯時もレイアウト崩れや文字ズレは起きません。\n- advance_timecode_fps: 24.0\n  ・フレーム進行に伴うタイムコード秒数の自動加算 FPS\n  ・24フレーム経過するごとにタイムコードが1秒ずつリアルに進みます。\n- timecode_mode: 'now (現在時刻を自動取得)'\n  ・撮影開始日時を現在時刻から自動取得し、秒単位でカウントアップします。\n\n■ リアルタイム枠プレビュー:\n- RecFrameVideoOverlay 直下の 'Preview REC Overlay' で、Queue を押さずに枠の太さやフォントをその場でダイナミック確認できます。\n\n■ 動画の保存 & 出力:\n- 'Create Video' と 'Save Video' により、元の音声とフレームレートを維持したまま、完成動画 (MP4等) として自動保存されます。"
       ],
       "color": "#233",
       "bgcolor": "#355"
@@ -506,7 +506,7 @@
   "groups": [
     {
       "id": 1,
-      "title": "1. ガイド (Video Animation Guide)",
+      "title": "1. ガイド",
       "bounding": [
         -400,
         0,
@@ -518,7 +518,7 @@
     },
     {
       "id": 2,
-      "title": "2. 入力動画 (Input Video & Split)",
+      "title": "2. 入力動画 & 分割",
       "bounding": [
         0,
         0,
@@ -530,7 +530,7 @@
     },
     {
       "id": 3,
-      "title": "3. 動画用REC枠合成 & リアルタイムプレビュー (Video Animation Overlay & Preview)",
+      "title": "3. 動画用REC枠合成 & リアルタイムプレビュー",
       "bounding": [
         430,
         0,
@@ -542,7 +542,7 @@
     },
     {
       "id": 4,
-      "title": "4. 完成動画出力 & 保存 (Final Video Combine & Save)",
+      "title": "4. 完成動画出力 & 保存",
       "bounding": [
         890,
         0,

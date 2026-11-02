@@ -1,5 +1,5 @@
 {
-  "id": "rec-frame-basic-workflow",
+  "id": "rec-frame-basic-workflow-en",
   "revision": 0,
   "last_node_id": 10,
   "last_link_id": 4,
@@ -13,7 +13,7 @@
       ],
       "size": [
         340,
-        500
+        520
       ],
       "flags": {},
       "order": 0,
@@ -24,7 +24,7 @@
         "Node name for S&R": "Note"
       },
       "widgets_values": [
-        "【REC Frame Overlay 基本ワークフロー】\n\nカメラのファインダー風UIオーバーレイを画像に合成する公式ワークフローです。\n\n■ 主な設定項目:\n- color: 白 (white) または 黒 (black)\n- font_key: 同梱の6フォントから選択\n  ・Roboto Condensed (標準)\n  ・Bebas Neue (縦長シネマ調)\n  ・DSEG7 Classic (7セグLED)\n  ・Share Tech Mono (等幅)\n  ・VT323 (レトロドット)\n  ・Zen Kaku Gothic (日本語)\n- thickness: 枠の太さ (0〜100、40が初期値)\n- bg_box_opacity: 文字・マーク背後の半透明座布団の濃さ (0.0=なし、0.10=おすすめ初期値)\n- timecode_mode: 'now' で現在日時、'manual' で自由設定\n- retro_effect: レトロエフェクト強度 (0=OFF・クリーン 〜 6=極限Break)\n\n■ リアルタイム枠プレビュー:\n- RecFrameImageOverlay の直下に 'Preview REC Overlay' が接続されています。\n- 枠の太さ・フォント・表示ON/OFF・背景色などを変更すると、Queue Prompt を押さずにその場でダイナミックにプレビュー画像が変化します。\n\n■ 出力スロットについて:\n- 通常は一番上の 'image' 出力（完成画像）を使用します。\n- 必要に応じて 'overlay_rgba'（背景透明の枠単体PNG）や 'overlay_mask'（枠マスク）を取り出して外部ソフトや後段ノードで活用することも可能です。"
+        "[REC Frame Overlay - Basic Workflow]\n\nOfficial workflow for compositing a camera viewfinder / HUD overlay onto still images.\n\n■ Key Settings:\n- color: White or Black frame theme\n- font_key: Choose from 6 bundled open-source fonts\n  * Roboto Condensed (Standard finder)\n  * Bebas Neue (Tall cinematic)\n  * DSEG7 Classic (7-segment LCD)\n  * Share Tech Mono (Monospace HUD)\n  * VT323 (Retro bitmap dot)\n  * Zen Kaku Gothic (Japanese gothic)\n- thickness: Frame thickness slider (0 to 100, default 40)\n- bg_box_opacity: Semi-transparent backdrop opacity behind text & icons (0.0 = none, 0.10 = recommended)\n- timecode_mode: 'now' for automatic current datetime, 'manual' for custom text\n- retro_effect: Retro degradation effect level (0 = Clean/Modern to 6 = Extreme Break)\n\n■ Real-Time Frame Preview:\n- 'Preview REC Overlay' is connected directly beneath RecFrameImageOverlay.\n- Tweaking thickness, font, toggles, or background colors updates the preview instantly in real-time without pressing 'Queue Prompt'.\n\n■ Output Slots:\n- 'image' (top slot): Final composited output image.\n- 'overlay_rgba': Transparent PNG overlay (UI only).\n- 'overlay_mask': Alpha mask for downstream nodes or external editors."
       ],
       "color": "#233",
       "bgcolor": "#355"
@@ -307,7 +307,7 @@
   "groups": [
     {
       "id": 1,
-      "title": "1. ガイド (Guide & Controls)",
+      "title": "1. Guide & Controls",
       "bounding": [
         -400,
         0,
@@ -319,7 +319,7 @@
     },
     {
       "id": 2,
-      "title": "2. 入力画像 (Input Image)",
+      "title": "2. Input Image",
       "bounding": [
         0,
         0,
@@ -331,7 +331,7 @@
     },
     {
       "id": 3,
-      "title": "3. ファインダー枠合成 & リアルタイムプレビュー (REC Frame Overlay & Preview)",
+      "title": "3. REC Frame Overlay & Preview",
       "bounding": [
         430,
         0,
@@ -343,7 +343,7 @@
     },
     {
       "id": 4,
-      "title": "4. 完成画像出力 (Final Composite Preview & Save)",
+      "title": "4. Final Composite Preview & Save",
       "bounding": [
         890,
         0,

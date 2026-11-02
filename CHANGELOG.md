@@ -7,6 +7,14 @@
 
 ## [1.0.0] - 2026-11-02
 
+### ワークフローの日英完全分離 (Official Workflows Bilingual Separation)
+- **英語版 (`_en.json`) と 日本語版 (`_ja.json`) の完全分離**:
+  - グローバルな ComfyUI ユーザーおよび国内ユーザーの利便性を極限まで高めるため、公式ワークフロー 3 種をそれぞれ英語版（`_en.json`）と日本語版（`_ja.json`）の計 6 ファイルに完全分離。
+  - **Note ノードの言語特化**: ワークフロー左端の解説 Note ノードを各言語ネイティブに全面書き下ろし。機能概要・設定項目・リアルタイムプレビュー・出力スロットの意味を完璧に案内。
+  - **Group タイトルの純化**: グループ枠のタイトルを各言語専用（EN: `1. Guide & Controls` 等、JA: `1. ガイド` 等）に整備し、余計な混在表記を排除。
+  - **ComfyUI 本体同期**: `scripts/create_workflows.py` を更新し、リポジトリ内 `workflows/` および ComfyUI 側 `user/default/workflows/rec-frame/` への自動生成・配置を完備。
+  - **自動テスト (`tests/test_workflows.py`)**: 6 ファイルすべての構文、リンク整合性、ウィジェット数を検証する自動テストに更新。
+
 ### ドキュメント & グローバル対応 (Documentation & Internationalization)
 - **英語メインの公式ドキュメント (README.md) と完全日本語版 (README_JA.md) の併設**:
   - ComfyUI-Manager およびグローバルコミュニティ（利用者の80%以上が英語圏）に向け、README.md を洗練された英語メインに刷新。

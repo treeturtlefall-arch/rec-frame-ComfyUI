@@ -45,10 +45,10 @@ ComfyUI 連携先: `C:\Users\coffe\Documents\ComfyUI\custom_nodes\rec-frame-Comf
   - `generate_dot_assets.py` — 高解像度 (512x512) 丸素材アセットの一括生成スクリプト。
   - `download_builtin_fonts.py` — 同梱フォントの一括取得スクリプト。
   - `dev/` — 開発・検証用スクリプト群。
-- `workflows/` — ComfyUI Desktop 向け公式ワークフロー JSON（基本・2000sレトロ・動画バッチ）。
-  - `rec_frame_basic_workflow.json` — 静止画向け基本ワークフロー（`RecFrameImageOverlay` ＋ `RecFramePreview`）。
-  - `rec_frame_2000s_digicam_workflow.json` — 2000s レトロデジカメ風プリセット（`RecFrameImageOverlay` ＋ `RecFramePreview`）。
-  - `rec_frame_video_batch_workflow.json` — 動画・連続フレームアニメーション（`RecFrameVideoOverlay` ＋ `RecFramePreview`）。
+- `workflows/` — ComfyUI Desktop 向け公式ワークフロー JSON（英語 `_en.json` / 日本語 `_ja.json` 完全分離・基本・2000sレトロ・動画バッチ）。
+  - `rec_frame_basic_workflow_en.json` / `rec_frame_basic_workflow_ja.json` — 静止画向け基本ワークフロー（`RecFrameImageOverlay` ＋ `RecFramePreview`）。
+  - `rec_frame_2000s_digicam_workflow_en.json` / `rec_frame_2000s_digicam_workflow_ja.json` — 2000s レトロデジカメ風プリセット（`RecFrameImageOverlay` ＋ `RecFramePreview`）。
+  - `rec_frame_video_batch_workflow_en.json` / `rec_frame_video_batch_workflow_ja.json` — 動画・連続フレームアニメーション（`RecFrameVideoOverlay` ＋ `RecFramePreview`）。
 - `assets/dots/` — 同梱の丸マーク透過素材（`flat_*` フラット真円、`glow_*` セルアニメ調発光光球）。ユーザーの自作マーク画像もここに配置可能。
 - `README.md` — 英語公式ドキュメント（グローバル・ComfyUI-Manager向け正本）。ビジュアルデモ、全パラメータ、ワークフロー、FAQを網羅。
 - `README_JA.md` — 日本語公式ドキュメント。全仕様、錯視メカニズムと調整Tips、自作フォント/マーク利用ガイドを完備。

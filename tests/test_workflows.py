@@ -11,9 +11,12 @@ WORKFLOWS_DIR = Path(__file__).resolve().parent.parent / "workflows"
 class TestWorkflowFiles(unittest.TestCase):
     def test_workflow_files_exist_and_valid(self):
         expected_files = [
-            "rec_frame_basic_workflow.json",
-            "rec_frame_2000s_digicam_workflow.json",
-            "rec_frame_video_batch_workflow.json",
+            "rec_frame_basic_workflow_en.json",
+            "rec_frame_basic_workflow_ja.json",
+            "rec_frame_2000s_digicam_workflow_en.json",
+            "rec_frame_2000s_digicam_workflow_ja.json",
+            "rec_frame_video_batch_workflow_en.json",
+            "rec_frame_video_batch_workflow_ja.json",
         ]
         for name in expected_files:
             file_path = WORKFLOWS_DIR / name

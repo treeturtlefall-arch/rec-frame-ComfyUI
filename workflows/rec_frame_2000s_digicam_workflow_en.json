@@ -1,5 +1,5 @@
 {
-  "id": "rec-frame-2000s-digicam-workflow",
+  "id": "rec-frame-2000s-digicam-workflow-en",
   "revision": 0,
   "last_node_id": 10,
   "last_link_id": 4,
@@ -24,7 +24,7 @@
         "Node name for S&R": "Note"
       },
       "widgets_values": [
-        "【2000s レトロデジカメ風ワークフロー】\n\n2000年代初頭のコンパクトデジタルカメラや液晶ファインダー特有の質感を再現する黄金比プリセットです。\n\n■ 最適化されたレトロ演出プリセット:\n- retro_effect: 2 (2000sデジカメ風標準)\n- font_key: 'Share Tech Mono(等幅)' (または 'VT323(レトロドット)')\n- dot_style: 'flat_red' / rec_label: 'STBY'\n- battery_bars: 3 (残量3目盛りリアル演出)\n- timecode_mode: 'manual' (例: 2004/08/15 PM 02:45)\n- bg_box_opacity: 0.10 (半透明座布団で視認性向上)\n\n■ リアルタイム枠プレビュー:\n- 直下の 'Preview REC Overlay' で、パラメータ調整結果を Queue を押さずにダイナミック確認できます。"
+        "[2000s Retro Digicam Preset Workflow]\n\nGolden-ratio preset replicating the nostalgic aesthetic of early 2000s compact digital cameras and low-res LCD viewfinders.\n\n■ Optimized Retro Preset Settings:\n- retro_effect: 2 (Classic 2000s digicam degradation)\n- font_key: 'Share Tech Mono' (or 'VT323' for pixel dot)\n- dot_style: 'flat_red' / rec_label: 'STBY' (Standby indicator)\n- battery_bars: 3 (Realistic 3-bar battery status)\n- timecode_mode: 'manual' (e.g. 2004/08/15 PM 02:45)\n- bg_box_opacity: 0.10 (Semi-transparent backdrop for high readability)\n\n■ Real-Time Frame Preview:\n- Connects directly to 'Preview REC Overlay' below. Adjust any parameter to preview changes live without queuing a prompt!\n\n■ Output Slots:\n- 'image': Final retro digicam composited result."
       ],
       "color": "#233",
       "bgcolor": "#355"
@@ -307,7 +307,7 @@
   "groups": [
     {
       "id": 1,
-      "title": "1. ガイド (Guide & Retro Tips)",
+      "title": "1. Guide & Retro Tips",
       "bounding": [
         -400,
         0,
@@ -319,7 +319,7 @@
     },
     {
       "id": 2,
-      "title": "2. 入力画像 (Input Image)",
+      "title": "2. Input Image",
       "bounding": [
         0,
         0,
@@ -331,7 +331,7 @@
     },
     {
       "id": 3,
-      "title": "3. 2000s デジカメ合成 & リアルタイムプレビュー (2000s Digicam Overlay & Preview)",
+      "title": "3. 2000s Digicam Overlay & Preview",
       "bounding": [
         430,
         0,
@@ -343,7 +343,7 @@
     },
     {
       "id": 4,
-      "title": "4. 完成画像出力 (Final Result)",
+      "title": "4. Final Result",
       "bounding": [
         890,
         0,

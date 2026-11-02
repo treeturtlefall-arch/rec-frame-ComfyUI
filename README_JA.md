@@ -131,13 +131,13 @@
 
 ## 公式ワークフロー（ComfyUI Desktop 対応）
 
-[`workflows/`](./workflows/) フォルダに、ドラッグ＆ドロップですぐに試せる3種類の公式ワークフローを同梱しています。また、ComfyUI Desktop の左側メニュー「Workflows」ブラウザ（`rec-frame/` フォルダ）からも直接開くことができます。
+[`workflows/`](./workflows/) フォルダに、ドラッグ＆ドロップですぐに試せる公式ワークフローを**日本語版（`_ja.json`）と英語版（`_en.json`）の完全分離形式**で同梱しています。また、ComfyUI Desktop の左側メニュー「Workflows」ブラウザ（`rec-frame/` フォルダ）からも直接開くことができます。
 
-1. **基本・静止画ワークフロー ([`rec_frame_basic_workflow.json`](./workflows/rec_frame_basic_workflow.json))**
+1. **基本・静止画ワークフロー** ([`rec_frame_basic_workflow_ja.json`](./workflows/rec_frame_basic_workflow_ja.json) / [EN](workflows/rec_frame_basic_workflow_en.json))
    - 画像読込 → `RecFrameImageOverlay` ＆ `RecFramePreview` → 画像プレビュー＆保存
-2. **2000s レトロデジカメ風ワークフロー ([`rec_frame_2000s_digicam_workflow.json`](./workflows/rec_frame_2000s_digicam_workflow.json))**
-   - `VT323` フォント、`retro_effect: 2`、中央十字、バッテリー2本、半透明座布団プリセット
-3. **動画・バッチアニメーションワークフロー ([`rec_frame_video_batch_workflow.json`](./workflows/rec_frame_video_batch_workflow.json))**
+2. **2000s レトロデジカメ風ワークフロー** ([`rec_frame_2000s_digicam_workflow_ja.json`](./workflows/rec_frame_2000s_digicam_workflow_ja.json) / [EN](workflows/rec_frame_2000s_digicam_workflow_en.json))
+   - `Share Tech Mono` / `VT323` フォント、`retro_effect: 2`、`STBY`表示、バッテリー3本、半透明座布団プリセット
+3. **動画・バッチアニメーションワークフロー** ([`rec_frame_video_batch_workflow_ja.json`](./workflows/rec_frame_video_batch_workflow_ja.json) / [EN](workflows/rec_frame_video_batch_workflow_en.json))
    - `Load Video` → `RecFrameVideoOverlay` (`blink_red_dot_interval: 24`, `advance_timecode_fps: 24.0`) → `Save Video`
 
 ---
