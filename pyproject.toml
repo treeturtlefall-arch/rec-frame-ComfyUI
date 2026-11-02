@@ -1,0 +1,31 @@
+[project]
+name = "rec-frame-comfyui"
+description = "Camera viewfinder & REC overlay generator for images and videos with retro UI effects in ComfyUI."
+version = "1.0.0"
+license = { file = "LICENSE" }
+readme = "README.md"
+authors = [
+    { name = "treeturtlefall-arch" }
+]
+keywords = [
+    "comfyui",
+    "overlay",
+    "viewfinder",
+    "camera",
+    "rec",
+    "retro",
+    "video",
+    "digicam",
+    "hud"
+]
+dependencies = [
+    "Pillow>=10.0.0"
+]
+
+[project.urls]
+Repository = "https://github.com/treeturtlefall-arch/rec-frame-ComfyUI"
+
+[tool.comfy]
+PublisherId = "treeturtlefall-arch"
+DisplayName = "REC Frame Overlay"
+Icon = ""

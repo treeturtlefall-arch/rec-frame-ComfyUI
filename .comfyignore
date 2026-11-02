@@ -1,0 +1,16 @@
+.git
+.github
+tests
+scripts
+doc
+__pycache__
+*.py[cod]
+.venv
+.pytest_cache
+*.png
+!assets/**
+!web/**
+SPEC.md
+AGENTS.md
+.gitignore
+.comfyignore

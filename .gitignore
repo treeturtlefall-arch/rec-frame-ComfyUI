@@ -1,0 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+
+# Testing & Cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Output & Temp
+output/
+temp/
+tmp/
+*.log
+tests/preview_gallery/
+
+# Editor & OS artifacts
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# Environment & Secrets
+*.env
+.env*
+*.pem
+*.key
