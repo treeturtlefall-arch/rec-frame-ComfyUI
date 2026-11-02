@@ -1,7 +1,7 @@
 [project]
 name = "rec-frame-comfyui"
 description = "Camera viewfinder & REC overlay generator for images and videos with retro UI effects in ComfyUI."
-version = "1.0.0"
+version = "1.1.0"
 license = { file = "LICENSE" }
 readme = "README.md"
 authors = [
