@@ -413,6 +413,18 @@ _TIMECODE_RE = re.compile(
     r"^\s*(\d{1,4})/(\d{1,2})/(\d{1,2})\s+(AM|PM)\s+(\d{1,2}):(\d{1,2})\s*$"
 )
 
+_TIMECODE_SEC_RE = re.compile(
+    r"^\s*(\d{1,4})/(\d{1,2})/(\d{1,2})\s+(AM|PM)\s+(\d{1,2}):(\d{1,2}):(\d{1,2})\s*$"
+)
+
+_SMPTE_RE = re.compile(
+    r"^\s*(\d{1,2}):(\d{1,2}):(\d{1,2})[:;](\d{1,2})\s*$"
+)
+
+_CLOCK_SEC_RE = re.compile(
+    r"^\s*(\d{1,2}):(\d{1,2}):(\d{1,2})\s*$"
+)
+
 
 def compose_timecode_text(year, month, day, ampm, hour, minute) -> str:
     """日時セレクタ値を `YYYY/MM/DD AM/PM HH:MM` に整形する (SPEC §10.3)。"""
@@ -430,6 +442,64 @@ def parse_timecode_text(text: str) -> tuple[int, int, int, str, int, int] | None
         return int(year), int(month), int(day), ampm, int(hour), int(minute)
     except ValueError:
         return None
+
+
+def parse_timecode_sec_text(text: str) -> tuple[int, int, int, str, int, int, int] | None:
+    """秒付き日時文字列 `YYYY/MM/DD AM/PM HH:MM:SS` をパースする。"""
+    m = _TIMECODE_SEC_RE.match(text or "")
+    if not m:
+        return None
+    year, month, day, ampm, hour, minute, second = m.groups()
+    try:
+        return int(year), int(month), int(day), ampm, int(hour), int(minute), int(second)
+    except ValueError:
+        return None
+
+
+def parse_smpte_text(text: str) -> tuple[int, int, int, int] | None:
+    """SMPTE タイムコード `HH:MM:SS:FF` (またはセミコロン区切り) をパースする。"""
+    m = _SMPTE_RE.match(text or "")
+    if not m:
+        return None
+    h, m_val, s, f = m.groups()
+    try:
+        return int(h), int(m_val), int(s), int(f)
+    except ValueError:
+        return None
+
+
+def parse_clock_sec_text(text: str) -> tuple[int, int, int] | None:
+    """時刻文字列 `HH:MM:SS` をパースする。"""
+    m = _CLOCK_SEC_RE.match(text or "")
+    if not m:
+        return None
+    h, m_val, s = m.groups()
+    try:
+        return int(h), int(m_val), int(s)
+    except ValueError:
+        return None
+
+
+def advance_smpte_timecode(
+    start_h: int,
+    start_m: int,
+    start_s: int,
+    start_f: int,
+    frame_offset: int,
+    fps: float,
+) -> str:
+    """SMPTE タイムコードを指定フレーム数分進めた文字列 `HH:MM:SS:FF` を生成する。"""
+    fps_int = max(1, int(round(fps))) if fps > 0.0 else 24
+    total_f = ((start_h * 3600 + start_m * 60 + start_s) * fps_int) + start_f + frame_offset
+    total_f = max(0, total_f)
+    f = total_f % fps_int
+    total_s = total_f // fps_int
+    s = total_s % 60
+    total_m = total_s // 60
+    m = total_m % 60
+    h = (total_m // 60) % 100
+    return f"{h:02d}:{m:02d}:{s:02d}:{f:02d}"
+
 
 
 @dataclass(frozen=True)

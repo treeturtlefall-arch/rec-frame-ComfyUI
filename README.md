@@ -69,13 +69,14 @@ Ported and optimized from [treeturtlefall-arch/rec-frame-app](https://github.com
 | `battery_bars` | `INT` (0 to 4) | `4` | Number of battery level bars (0 expresses depleted/blinking battery). |
 | `show_cross` | `BOOLEAN` | `False` | Toggle center crosshairs focus mark. |
 | `show_timecode` | `BOOLEAN` | `False` | Toggle timestamp/timecode display. |
-| `timecode_mode` | `manual`, `now` | `manual` | Manual custom text vs. current local time auto-fill. |
-| `timecode_text` | `STRING` | `""` | Timestamp text (`YYYY/MM/DD AM/PM HH:MM` or any custom string). |
+| `timecode_mode` | `manual`, `now`, `now_sec`, `smpte` | `manual` | Timecode mode: manual text, current time (minutes), current time (seconds `:SS`), or frame-accurate SMPTE (`HH:MM:SS:FF`). |
+| `timecode_text` | `STRING` | `""` | Timestamp text (`YYYY/MM/DD AM/PM HH:MM[:SS]`, SMPTE `00:00:00:00`, or custom text). |
 
 ### Optional & Advanced Video Settings
 | Parameter | Type | Default | Description |
 |---|---|---|---|
 | `images` / `image` | `IMAGE` | Optional | Input image or video batch `[B, H, W, C]`. Generates standalone overlay if unconnected. |
+| `fps` | `FLOAT` (Input Pin) | Optional | External frame rate connection (wire from `GetVideoComponents` or model output). Overrides `advance_timecode_fps` and auto-syncs timecode to video speed. |
 | `custom_color` | `STRING` | `""` | Direct HEX color override (e.g. `#00FF50`). Highest priority over `color`. |
 | `custom_font_path` | `STRING` | `""` | Direct path to external `.ttf`/`.otf`/`.ttc` font file (works immediately without restart). |
 | `custom_dot_path` | `STRING` | `""` | Direct path to custom dot/logo `.png`/`.webp` image (works immediately without restart). |
@@ -132,7 +133,12 @@ Ready-to-use workflows in both **English (`_en.json`)** and **Japanese (`_ja.jso
 2. **2000s Digicam Preset Workflow** ([`rec_frame_2000s_digicam_workflow_en.json`](./workflows/rec_frame_2000s_digicam_workflow_en.json) / [JA](workflows/rec_frame_2000s_digicam_workflow_ja.json))
    - Features `Share Tech Mono` / `VT323` dot font, `retro_effect: 2`, `STBY` indicator, 3-bar battery, and backdrop boxes.
 3. **Video Animation Batch Workflow** ([`rec_frame_video_batch_workflow_en.json`](./workflows/rec_frame_video_batch_workflow_en.json) / [JA](workflows/rec_frame_video_batch_workflow_ja.json))
-   - Complete video pipeline with `RecFrameVideoOverlay` (`blink_red_dot_interval: 24`, `advance_timecode_fps: 24.0`).
+   - Complete video pipeline with `RecFrameVideoOverlay` (`blink_red_dot_interval: 24`, `fps` auto-sync from `GetVideoComponents`).
+
+> [!IMPORTANT]
+> **Video Pipeline Best Practice: "Overlay Belongs Last"**  
+> If your pipeline uses **Frame Interpolation (e.g. RIFE, FILM)** or **AI Upscaling (e.g. RealESRGAN, NNLatentUpscale)**, ALWAYS place `RecFrameVideoOverlay` **AFTER** them, immediately before video combining/saving (`CreateVideo` / `SaveVideo`).  
+> * **Why?** Frame interpolation morphs text edges and blinking elements, resulting in blurry smearing, and changes total frame count which can desync timecode timing. AI upscalers can also treat retro pixel artifacts as noise. Keep the overlay as the final composite step for crisp, authentic HUD elements!
 
 ---
 

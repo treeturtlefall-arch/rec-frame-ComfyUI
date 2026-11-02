@@ -773,6 +773,83 @@ class TestRefactorRegressions(unittest.TestCase):
         out_img2, out_ov2, _ = img_node.apply_overlay(image=dummy_img, custom_color="#FFE100")
         self.assertEqual(out_img2.shape, (1, 120, 160, 3))
 
+    def test_video_overlay_external_fps_input(self) -> None:
+        """RecFrameVideoOverlayNode で外部 fps 入力ピンが advance_timecode_fps を上書きすること。"""
+        node = RecFrameVideoOverlayNode()
+        inputs = node.INPUT_TYPES()
+        self.assertIn("fps", inputs["optional"])
+        self.assertEqual(inputs["optional"]["fps"][0], "FLOAT")
+        self.assertTrue(inputs["optional"]["fps"][1].get("forceInput", False))
+
+        # 16fps (Wan相当) で 17フレームのバッチを渡す
+        # advance_timecode_fps=24.0 (ウィジェット) が指定されていても、fps=16.0 (入力ピン) が優先され、
+        # 16フレーム目 (0-indexed: index 16) で 1 秒進む
+        batch = torch.zeros((17, 120, 200, 3), dtype=torch.float32)
+        _, ov, _ = node.apply_overlay(
+            images=batch,
+            fps=16.0,
+            advance_timecode_fps=24.0,  # ウィジェット値
+            show_timecode=True,
+            timecode_mode="smpte (フレーム 00:00:00:00)",
+            timecode_text="00:00:00:00",
+            color="white (白)",
+        )
+        self.assertEqual(ov.shape[0], 17)
+        # frame 0 と frame 15 は異なる (毎フレーム変化)
+        self.assertFalse(torch.equal(ov[0], ov[1]))
+        self.assertFalse(torch.equal(ov[0], ov[15]))
+        self.assertFalse(torch.equal(ov[15], ov[16]))
+
+    def test_smpte_timecode_advancement(self) -> None:
+        """SMPTE タイムコード (HH:MM:SS:FF) の正確なフレーム繰り上がり検証。"""
+        from rec_config import advance_smpte_timecode, parse_smpte_text
+
+        # 16fps (Wan)
+        tc_0 = advance_smpte_timecode(0, 0, 0, 0, 0, fps=16.0)
+        tc_15 = advance_smpte_timecode(0, 0, 0, 0, 15, fps=16.0)
+        tc_16 = advance_smpte_timecode(0, 0, 0, 0, 16, fps=16.0)
+        self.assertEqual(tc_0, "00:00:00:00")
+        self.assertEqual(tc_15, "00:00:00:15")
+        self.assertEqual(tc_16, "00:00:01:00")
+
+        # 24fps
+        tc_23 = advance_smpte_timecode(0, 0, 0, 0, 23, fps=24.0)
+        tc_24 = advance_smpte_timecode(0, 0, 0, 0, 24, fps=24.0)
+        self.assertEqual(tc_23, "00:00:00:23")
+        self.assertEqual(tc_24, "00:00:01:00")
+
+    def test_timecode_seconds_advancement(self) -> None:
+        """秒付き日時 (YYYY/MM/DD AM/PM HH:MM:SS) の1秒毎カウントアップ検証。"""
+        node = RecFrameVideoOverlayNode()
+        # 1fps で 3フレーム: 0秒目、1秒目、2秒目でそれぞれ異なる画像になる
+        batch = torch.zeros((3, 120, 200, 3), dtype=torch.float32)
+        _, ov, _ = node.apply_overlay(
+            images=batch,
+            advance_timecode_fps=1.0,
+            show_timecode=True,
+            timecode_mode="manual (手入力テキスト)",
+            timecode_text="2026/11/01 PM 08:30:00",
+            color="white (白)",
+        )
+        self.assertFalse(torch.equal(ov[0], ov[1]))
+        self.assertFalse(torch.equal(ov[1], ov[2]))
+
+    def test_overlay_cache_bounded(self) -> None:
+        """毎フレーム変化するタイムコードでも overlay_cache が上限 (32) を超えずメモリ保護されること。"""
+        node = RecFrameVideoOverlayNode()
+        # 40フレーム（32個を超える）のバッチを処理
+        batch = torch.zeros((40, 120, 200, 3), dtype=torch.float32)
+        out_img, out_ov, _ = node.apply_overlay(
+            images=batch,
+            fps=24.0,
+            show_timecode=True,
+            timecode_mode="smpte (フレーム 00:00:00:00)",
+            timecode_text="00:00:00:00",
+            color="white (白)",
+        )
+        self.assertEqual(out_img.shape[0], 40)
+        self.assertEqual(out_ov.shape[0], 40)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

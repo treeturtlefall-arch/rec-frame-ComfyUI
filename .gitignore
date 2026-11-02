@@ -36,3 +36,10 @@ desktop.ini
 .env*
 *.pem
 *.key
+
+# Scratch & Dev temporary files
+scripts/dev/reddit_*
+scripts/dev/*reddit*
+scripts/dev/check_html.py
+scripts/dev/extract_*
+

@@ -194,6 +194,7 @@ def make_rec_video_node(
     size: list[float],
     images_link_id: int,
     *,
+    fps_link_id: int | None = None,
     color: str = "white (白)",
     font_key: str = "Share Tech Mono(等幅)",
     retro_effect: int = 0,
@@ -218,6 +219,22 @@ def make_rec_video_node(
     out_links: dict[int, list[int]] | None = None,
 ) -> dict[str, Any]:
     out_links = out_links or {}
+
+    inputs = [
+        {
+            "name": "images",
+            "type": "IMAGE",
+            "link": images_link_id,
+            "localized_name": "images",
+        }
+    ]
+    if fps_link_id is not None:
+        inputs.append({
+            "name": "fps",
+            "type": "FLOAT",
+            "link": fps_link_id,
+            "localized_name": "fps",
+        })
 
     widgets_values = [
         color,
@@ -275,14 +292,7 @@ def make_rec_video_node(
         "flags": {},
         "order": 1,
         "mode": 0,
-        "inputs": [
-            {
-                "name": "images",
-                "type": "IMAGE",
-                "link": images_link_id,
-                "localized_name": "images",
-            }
-        ],
+        "inputs": inputs,
         "outputs": [
             {
                 "name": "images",
@@ -727,19 +737,25 @@ NOTE_VIDEO_JA = (
     "【動画・バッチフレーム用 REC枠合成ワークフロー】\n\n"
     "動画ファイル (.mp4 / .webm 等) を読み込み、ファインダー枠・赤丸REC点滅・\n"
     "リアルタイム進行タイムコードをオーバーレイ合成して動画出力します。\n\n"
-    "■ 動画の指定・読み込み:\n"
-    "- '2. 入力動画 & 分割' グループの 'Load Video' で動画ファイルを指定（ドラッグ＆ドロップまたは選択）。\n"
-    "- 'Get Video Components' がフレーム画像・音声・FPSを自動抽出して後続へ渡します。\n\n"
+    "■ 重要: パイプライン接続順序 (Overlay belongs last):\n"
+    "- アップスケール (Upscale) やフレーム補間 (RIFE / FILM 等) を使用する場合は、\n"
+    "  必ずそれらの『後』（動画保存ノードの直前）に RecFrameVideoOverlay を配置してください。\n"
+    "- オーバーレイの後に補間やアップスケールを挟むと、HUD文字の滲み (smear) や\n"
+    "  フレームレート変更に伴うタイムコード進行の狂いが発生します。\n\n"
+    "■ FPS 自動同期 (Wan / MiniMax / AnimateDiff 等の不一致防止):\n"
+    "- 'Get Video Components' から RecFrameVideoOverlay の 'fps' 入力ピンへ直結されているため、\n"
+    "  動画のフレームレート (16fps, 24fps, 25fps, 30fps 等) に自動追従します。\n"
+    "- 手動指定する場合は 'fps' ピンを外し、advance_timecode_fps で調整してください。\n\n"
+    "■ タイムコードの秒進行 (:SS) ＆ SMPTE (:FF) カウンター:\n"
+    "- timecode_mode で 'now_sec (秒単位)' や 'smpte (00:00:00:00)' を選択すると、\n"
+    "  数秒の短尺動画でもリアルタイムに数値がカウントアップします。\n\n"
     "■ 設定済みの動画用パラメータ:\n"
     "- blink_red_dot_interval: 24\n"
     "  ・赤丸RECマークの点滅間隔 (フレーム数)\n"
     "  ・24fps設定時、24フレーム (1.0秒) ごとに点灯と消灯を繰り返します。\n"
     "  ・消灯時もレイアウト崩れや文字ズレは起きません。\n"
     "- advance_timecode_fps: 24.0\n"
-    "  ・フレーム進行に伴うタイムコード秒数の自動加算 FPS\n"
-    "  ・24フレーム経過するごとにタイムコードが1秒ずつリアルに進みます。\n"
-    "- timecode_mode: 'now (現在時刻を自動取得)'\n"
-    "  ・撮影開始日時を現在時刻から自動取得し、秒単位でカウントアップします。\n\n"
+    "  ・fps 入力ピン未接続時のタイムコード進行フォールバック FPS\n\n"
     "■ リアルタイム枠プレビュー:\n"
     "- RecFrameVideoOverlay 直下の 'Preview REC Overlay' で、Queue を押さずに枠の太さやフォントをその場でダイナミック確認できます。\n\n"
     "■ 動画の保存 & 出力:\n"
@@ -749,19 +765,21 @@ NOTE_VIDEO_JA = (
 NOTE_VIDEO_EN = (
     "[Video Animation & Batch Frames Overlay Workflow]\n\n"
     "Loads a video file (.mp4, .webm, etc.) and composites a camera viewfinder overlay with a blinking REC indicator and advancing timecode.\n\n"
-    "■ Video Input:\n"
-    "- Specify your video file in 'Load Video' within the '2. Input Video & Split' group.\n"
-    "- 'Get Video Components' automatically extracts frames, audio, and FPS.\n\n"
+    "■ IMPORTANT: Node Order (Overlay Belongs Last):\n"
+    "- If you use frame interpolation (RIFE / FILM) or upscalers, ALWAYS place RecFrameVideoOverlay AFTER them (right before Create Video / Save).\n"
+    "- Placing interpolation or upscale after the overlay causes HUD text smearing and timecode desync.\n\n"
+    "■ Automatic FPS Synchronization:\n"
+    "- The 'fps' input pin of RecFrameVideoOverlay is directly wired to 'Get Video Components' (or your video model's FPS output).\n"
+    "- Timecode progression and frame counting automatically match your video's native rate (Wan 16fps, MiniMax 24fps, etc.).\n\n"
+    "■ Advancing Seconds (:SS) & SMPTE Frame Counter (:FF):\n"
+    "- Select 'now_sec' or 'smpte (00:00:00:00)' under timecode_mode for dynamic frame-by-frame and second-by-second updates even in short clips.\n\n"
     "■ Video-Specific Parameters:\n"
     "- blink_red_dot_interval: 24\n"
     "  * Blinking interval in frames for the red dot REC marker.\n"
     "  * At 24 FPS, the dot toggles on/off every 24 frames (1.0 second).\n"
     "  * Layout remains rock-solid without shifting when the dot is unlit.\n"
     "- advance_timecode_fps: 24.0\n"
-    "  * Frame rate for advancing the timecode.\n"
-    "  * Timecode advances by exactly 1 second every 24 frames.\n"
-    "- timecode_mode: 'now'\n"
-    "  * Starts at current datetime and counts upward smoothly frame by frame.\n\n"
+    "  * Fallback frame rate when the 'fps' input pin is disconnected.\n\n"
     "■ Real-Time Frame Preview:\n"
     "- 'Preview REC Overlay' directly below allows instant live preview of your overlay design without queuing a prompt.\n\n"
     "■ Video Save & Export:\n"
@@ -852,7 +870,7 @@ def build_video_batch_workflow(lang: Lang = "en") -> dict[str, Any]:
             "outputs": [
                 {"name": "images", "type": "IMAGE", "slot_index": 0, "links": [2], "localized_name": "images"},
                 {"name": "audio", "type": "AUDIO", "slot_index": 1, "links": [6], "localized_name": "audio"},
-                {"name": "fps", "type": "FLOAT", "slot_index": 2, "links": [5], "localized_name": "fps"},
+                {"name": "fps", "type": "FLOAT", "slot_index": 2, "links": [5, 8], "localized_name": "fps"},
                 {"name": "bit_depth", "type": "COMBO", "slot_index": 3, "links": None, "localized_name": "bit_depth"},
                 {"name": "color_space", "type": "COMBO", "slot_index": 4, "links": None, "localized_name": "color_space"},
             ],
@@ -866,6 +884,7 @@ def build_video_batch_workflow(lang: Lang = "en") -> dict[str, Any]:
             pos=[450, 50],
             size=[400, 680],
             images_link_id=2,
+            fps_link_id=8,
             color="white (白)",
             font_key="Share Tech Mono(等幅)",
             retro_effect=0,
@@ -952,13 +971,14 @@ def build_video_batch_workflow(lang: Lang = "en") -> dict[str, Any]:
         [5, 11, 2, 20, 1, "FLOAT"],
         [6, 11, 1, 20, 2, "AUDIO"],
         [7, 20, 0, 21, 0, "VIDEO"],
+        [8, 11, 2, 2, 1, "FLOAT"],
     ]
 
     return {
         "id": f"rec-frame-video-batch-workflow-{lang}",
         "revision": 0,
         "last_node_id": 21,
-        "last_link_id": 7,
+        "last_link_id": 8,
         "nodes": nodes,
         "links": links,
         "groups": groups_data,

@@ -18,7 +18,7 @@ ComfyUI 連携先: `C:\Users\coffe\Documents\ComfyUI\custom_nodes\rec-frame-Comf
 - `nodes.py` — ComfyUI ノード定義層。PyTorch `Tensor` (`[B, H, W, C]`, float32 `0..1`) と `PIL.Image` の相互変換、バッチ/動画フレーム処理、キャッシュ制御、プレビューAPIエンドポイント (`POST /rec_frame/preview`) を行う。
   - **静止画・動画の役割分離設計**:
     - `RecFrameImageOverlayNode` (`RecFrameImageOverlay` / 表示名: `REC Frame (Image) [画像用]`) — 静止画特化ノード。動画専用の点滅・FPS設定を排除したスッキリしたUIで、枠の太さ・フォント・色・電池・REC文字・日時タイムコード・座布団・エフェクトをシンプルに調整可能。全フレーム同一のオーバーレイを1回のみ生成して高速一括合成。入力画像なし時は `empty_width` / `empty_height`（既定 1280x720）により単体オーバーレイジェネレーターとして機能。
-    - `RecFrameVideoOverlayNode` (`RecFrameVideoOverlay` / 表示名: `REC Frame (Video) [動画用]`) — 動画・バッチフレーム特化ノード。画像用の基本設定に加え、赤丸REC点滅間隔 (`blink_red_dot_interval`) やフレーム経過に伴うタイムコード進行 (`advance_timecode_fps`) を完備。動画生成パイプライン向け。入力画像なし時は `empty_width` / `empty_height` / `empty_frames`（既定 24フレーム）により動画用透過連番枠を単体生成可能。
+    - `RecFrameVideoOverlayNode` (`RecFrameVideoOverlay` / 表示名: `REC Frame (Video) [動画用]`) — 動画・バッチフレーム特化ノード。画像用の基本設定に加え、外部 `fps` 入力ピン (`forceInput: True`) による動画FPS完全自動同期、赤丸REC点滅間隔 (`blink_red_dot_interval`)、秒単位 (`:SS`) および SMPTE規格 (`HH:MM:SS:FF`) のタイムコード進行 (`timecode_mode`: `now_sec` / `smpte` / `manual`) を完備。動画生成パイプライン向け。入力画像なし時は `empty_width` / `empty_height` / `empty_frames`（既定 24フレーム）により動画用透過連番枠を単体生成可能。
     - `RecFrameOverlayNode` (`RecFrameOverlay` / 表示名: `REC Frame Overlay (All-in-One / Legacy)`) — 既存ワークフロー互換用の統合ノード（全機能内包）。
     - `RecFrameCustomOverlayNode` (`RecFrameCustomOverlay`) — 既存ワークフロー互換用のエイリアス。
     - `RecFramePreviewNode` (`RecFramePreview` / 表示名: `Preview REC Overlay (枠プレビュー)`) — プレビュー専用ノード。`RecFrameImageOverlay` / `RecFrameVideoOverlay` / `RecFrameOverlay` から出力された `overlay_rgba` を受け取り、選択した背景色（黒・白・グレー・市松模様）の上に重ねてノード内にリアルタイム表示する。後続ノードへ `IMAGE` 出力も可能。
@@ -116,7 +116,7 @@ ComfyUI 本体の仮想環境 Python を使って、単体で高速に自動テ�
    - 適用順序は **「RGBシフト → ブルーム → 低解像度化」** で固定する。ブルームは白枠と黒枠で半径・アルファ値を分岐させる。
 6. **バッチ処理のキャッシュ最適化と静止画/動画の分離原則**
    - **静止画ノード (`RecFrameImageOverlay`)**: 点滅やタイムコード進行を持たないため、入力画像が複数フレーム（バッチ）であってもオーバーレイ（RGBA）を最初の 1 回のみ生成し、全フレームに対して `torch.lerp` で一括高速合成する（余計なキャッシュ検索やフレーム毎の分岐をゼロ化）。
-   - **動画ノード (`RecFrameVideoOverlay`)**: MiniMax-H3 / Wan / AnimateDiff 等の 56 フレーム等のバッチ入力に対し、オーバーレイを `(赤丸点灯, タイムコード文字列)` キーの辞書でキャッシュし、必要最小限の描画（例: タイムコードが秒単位進行なら24フレームに1回＋点滅2状態のみ）で済ませる。
+   - **動画ノード (`RecFrameVideoOverlay`)**: MiniMax-H3 / Wan / AnimateDiff 等のバッチ入力に対し、オーバーレイを `(赤丸点灯, タイムコード文字列)` キーの辞書でキャッシュし、必要最小限の描画で済ませる。毎フレーム変化する SMPTE タイムコード時でも VRAM/RAM が肥大化しないよう、キャッシュ上限（`MAX_CACHE_SIZE = 32`）を設けて FIFO で安全に古いエントリを破棄する。
    - 合成処理は PIL を経由せず Tensor 上 (`torch.lerp` によるストレートα over 合成) で行う。入力画像を 8bit に量子化しないこと。
    - 赤丸点滅の消灯フレームは `show_red_dot=False` ではなく `red_dot_visible=False` を使う (レイアウトを維持し、REC 文字・座布団を動かさない)。
 7. **フォントの自己完結・OSシステムフォルダ非アクセス**
@@ -127,6 +127,9 @@ ComfyUI 本体の仮想環境 Python を使って、単体で高速に自動テ�
    - **輝度連動反転色**: 描画色の知覚輝度（`0.299R + 0.587G + 0.114B`）を計算し、暗色時（黒など輝度 < 60）は白半透明 `rgba(255, 255, 255, alpha)`、明色・蛍光色時（白・緑・シアン・黄・赤等）は黒半透明 `rgba(0, 0, 0, alpha)` を自動適用して常に可読性を確保。
    - **L字枠クリアランス**: 各ボックスは L字枠の縦線・横線内側から一定の余白比率（`BOX_CLEARANCE_X_RATIO = 0.012`, `BOX_CLEARANCE_Y_RATIO = 0.010`）を厳守して配置され、枠の太さ（`thickness`）を変更しても接触・干渉しない。
    - **厳密インクセンタリング**: 文字配置は `font.getmask2(..., anchor="lt")` を利用した `_tight_ink_metrics` により、フォント固有のアセンダ・ディセンダやサイドベアリングの空きに惑わされず、実描画インクの幾何中心をボックスおよび赤丸の中心線 `cy` にピクセル単位で一致させる。
+9. **動画生成パイプラインの接続順序（Overlay Belongs Last: アップスケール・補間の後に配置）**
+   - フレーム補間（RIFE / FILM 等）や AIアップスケール（RealESRGAN 等）を使用する場合は、**必ずそれらの後（動画保存ノードの直前）に `RecFrameVideoOverlay` を配置**すること。
+   - オーバーレイの後に補間を挟むと文字や枠がモーフィングで滲み（smear）、フレーム数倍増でタイムコード速度がズレる。HUDは常に最終合成ステップとする。
 
 ---
 

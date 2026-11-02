@@ -2,7 +2,7 @@
   "id": "rec-frame-video-batch-workflow-en",
   "revision": 0,
   "last_node_id": 21,
-  "last_link_id": 7,
+  "last_link_id": 8,
   "nodes": [
     {
       "id": 10,
@@ -24,7 +24,7 @@
         "Node name for S&R": "Note"
       },
       "widgets_values": [
-        "[Video Animation & Batch Frames Overlay Workflow]\n\nLoads a video file (.mp4, .webm, etc.) and composites a camera viewfinder overlay with a blinking REC indicator and advancing timecode.\n\n■ Video Input:\n- Specify your video file in 'Load Video' within the '2. Input Video & Split' group.\n- 'Get Video Components' automatically extracts frames, audio, and FPS.\n\n■ Video-Specific Parameters:\n- blink_red_dot_interval: 24\n  * Blinking interval in frames for the red dot REC marker.\n  * At 24 FPS, the dot toggles on/off every 24 frames (1.0 second).\n  * Layout remains rock-solid without shifting when the dot is unlit.\n- advance_timecode_fps: 24.0\n  * Frame rate for advancing the timecode.\n  * Timecode advances by exactly 1 second every 24 frames.\n- timecode_mode: 'now'\n  * Starts at current datetime and counts upward smoothly frame by frame.\n\n■ Real-Time Frame Preview:\n- 'Preview REC Overlay' directly below allows instant live preview of your overlay design without queuing a prompt.\n\n■ Video Save & Export:\n- Combines composited frames with original audio and FPS via 'Create Video' and saves the final result with 'Save Video'."
+        "[Video Animation & Batch Frames Overlay Workflow]\n\nLoads a video file (.mp4, .webm, etc.) and composites a camera viewfinder overlay with a blinking REC indicator and advancing timecode.\n\n■ IMPORTANT: Node Order (Overlay Belongs Last):\n- If you use frame interpolation (RIFE / FILM) or upscalers, ALWAYS place RecFrameVideoOverlay AFTER them (right before Create Video / Save).\n- Placing interpolation or upscale after the overlay causes HUD text smearing and timecode desync.\n\n■ Automatic FPS Synchronization:\n- The 'fps' input pin of RecFrameVideoOverlay is directly wired to 'Get Video Components' (or your video model's FPS output).\n- Timecode progression and frame counting automatically match your video's native rate (Wan 16fps, MiniMax 24fps, etc.).\n\n■ Advancing Seconds (:SS) & SMPTE Frame Counter (:FF):\n- Select 'now_sec' or 'smpte (00:00:00:00)' under timecode_mode for dynamic frame-by-frame and second-by-second updates even in short clips.\n\n■ Video-Specific Parameters:\n- blink_red_dot_interval: 24\n  * Blinking interval in frames for the red dot REC marker.\n  * At 24 FPS, the dot toggles on/off every 24 frames (1.0 second).\n  * Layout remains rock-solid without shifting when the dot is unlit.\n- advance_timecode_fps: 24.0\n  * Fallback frame rate when the 'fps' input pin is disconnected.\n\n■ Real-Time Frame Preview:\n- 'Preview REC Overlay' directly below allows instant live preview of your overlay design without queuing a prompt.\n\n■ Video Save & Export:\n- Combines composited frames with original audio and FPS via 'Create Video' and saves the final result with 'Save Video'."
       ],
       "color": "#233",
       "bgcolor": "#355"
@@ -111,7 +111,8 @@
           "type": "FLOAT",
           "slot_index": 2,
           "links": [
-            5
+            5,
+            8
           ],
           "localized_name": "fps"
         },
@@ -156,6 +157,12 @@
           "type": "IMAGE",
           "link": 2,
           "localized_name": "images"
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "link": 8,
+          "localized_name": "fps"
         }
       ],
       "outputs": [
@@ -501,6 +508,14 @@
       21,
       0,
       "VIDEO"
+    ],
+    [
+      8,
+      11,
+      2,
+      2,
+      1,
+      "FLOAT"
     ]
   ],
   "groups": [

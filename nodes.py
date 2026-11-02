@@ -40,12 +40,16 @@ try:
         DEFAULT_THICKNESS,
         FONT_CHOICES,
         OverlayConfig,
+        advance_smpte_timecode,
         discover_custom_fonts,
         get_all_dot_styles,
         get_all_font_names,
         is_valid_custom_font_path,
         is_valid_dot_asset_path,
+        parse_clock_sec_text,
         parse_color_to_rgba,
+        parse_smpte_text,
+        parse_timecode_sec_text,
         parse_timecode_text,
     )
     from .rec_overlay import (
@@ -56,6 +60,7 @@ try:
         apply_custom_ui_effects,
         create_rec_overlay_with_config,
         format_photo_timecode,
+        format_photo_timecode_sec,
     )
 except ImportError:
     from rec_config import (
@@ -66,12 +71,16 @@ except ImportError:
         DEFAULT_THICKNESS,
         FONT_CHOICES,
         OverlayConfig,
+        advance_smpte_timecode,
         discover_custom_fonts,
         get_all_dot_styles,
         get_all_font_names,
         is_valid_custom_font_path,
         is_valid_dot_asset_path,
+        parse_clock_sec_text,
         parse_color_to_rgba,
+        parse_smpte_text,
+        parse_timecode_sec_text,
         parse_timecode_text,
     )
     from rec_overlay import (
@@ -82,6 +91,7 @@ except ImportError:
         apply_custom_ui_effects,
         create_rec_overlay_with_config,
         format_photo_timecode,
+        format_photo_timecode_sec,
     )
 
 logger = logging.getLogger(__name__)
@@ -138,9 +148,27 @@ EFFECT_MAP: dict[str, str] = {
 TIMECODE_MODE_MAP: dict[str, str] = {
     "manual (手入力テキスト)": "manual",
     "now (現在時刻を自動取得)": "now",
+    "now_sec (現在時刻・秒単位)": "now_sec",
+    "smpte (フレーム 00:00:00:00)": "smpte",
+    # 後方互換・短縮キー
     "manual": "manual",
     "now": "now",
+    "now_sec": "now_sec",
+    "smpte": "smpte",
 }
+
+TIMECODE_CHOICES_IMAGE = [
+    "manual (手入力テキスト)",
+    "now (現在時刻を自動取得)",
+    "now_sec (現在時刻・秒単位)",
+]
+
+TIMECODE_CHOICES_VIDEO = [
+    "now_sec (現在時刻・秒単位)",
+    "smpte (フレーム 00:00:00:00)",
+    "now (現在時刻を自動取得)",
+    "manual (手入力テキスト)",
+]
 
 BLOOM_MAP: dict[str, str] = {
     "preset (プリセットに従う)": "preset",
@@ -240,25 +268,128 @@ def _parse_thickness(thickness: Any) -> int | str:
     return DEFAULT_THICKNESS
 
 
-def _resolve_base_datetime(mode: str, manual_text: str) -> datetime | None:
-    """タイムコード基準時刻を解決する。
+class OverlayBuildResult(tuple):
+    """5要素タプル互換かつ tc_kind / tc_val 属性を持つビルド結果コンテナ。"""
 
-    - now: 現在時刻
-    - manual: `YYYY/MM/DD AM/PM HH:MM` 形式ならその日時。解釈できない自由文字列は None
-      (タイムコード進行の対象外とし、入力テキストをそのまま固定表示する)。
+    def __new__(
+        cls,
+        base_config: OverlayConfig,
+        effect_params: dict[str, Any] | None,
+        c_key: str,
+        base_tc_text: str,
+        base_dt: datetime | None,
+        tc_kind: str = "static",
+        tc_val: Any = None,
+    ) -> OverlayBuildResult:
+        return super().__new__(
+            cls,
+            (base_config, effect_params, c_key, base_tc_text, base_dt),
+        )
+
+    def __init__(
+        self,
+        base_config: OverlayConfig,
+        effect_params: dict[str, Any] | None,
+        c_key: str,
+        base_tc_text: str,
+        base_dt: datetime | None,
+        tc_kind: str = "static",
+        tc_val: Any = None,
+    ) -> None:
+        self.tc_kind = tc_kind
+        self.tc_val = tc_val
+
+
+def _resolve_timecode_info(mode: str, manual_text: str) -> tuple[str, Any, str]:
+    """タイムコードの進行モードと初期基準値を解決する。
+
+    返り値: (kind, base_val, initial_text)
+    kind: "now" | "now_sec" | "smpte" | "datetime_min" | "datetime_sec" | "static"
     """
+    manual_clean = (manual_text or "").strip()
+
     if mode == "now":
-        return datetime.now()
-    parsed = parse_timecode_text(manual_text)
-    if parsed is None:
-        return None
-    year, month, day, ampm, hour, minute = parsed
-    h24 = hour % 12 + (12 if ampm == "PM" else 0)
-    year = max(1, min(9999, year))
-    month = max(1, min(12, month))
-    # 月末日 (29〜31日) を保持しつつ、存在しない日付のみ月末に丸める
-    day = max(1, min(calendar.monthrange(year, month)[1], day))
-    return datetime(year, month, day, h24, max(0, min(59, minute)))
+        now = datetime.now()
+        return ("now", now, format_photo_timecode(now))
+    elif mode == "now_sec":
+        now = datetime.now()
+        return ("now_sec", now, format_photo_timecode_sec(now))
+    elif mode == "smpte":
+        parsed_smpte = parse_smpte_text(manual_clean)
+        smpte_tuple = parsed_smpte if parsed_smpte is not None else (0, 0, 0, 0)
+        init_text = f"{smpte_tuple[0]:02d}:{smpte_tuple[1]:02d}:{smpte_tuple[2]:02d}:{smpte_tuple[3]:02d}"
+        return ("smpte", smpte_tuple, init_text)
+
+    # mode == "manual" の場合: 入力テキストの形式を自動判別
+    # 1. SMPTE (HH:MM:SS:FF / HH:MM:SS;FF)
+    parsed_smpte = parse_smpte_text(manual_clean)
+    if parsed_smpte is not None:
+        init_text = f"{parsed_smpte[0]:02d}:{parsed_smpte[1]:02d}:{parsed_smpte[2]:02d}:{parsed_smpte[3]:02d}"
+        return ("smpte", parsed_smpte, init_text)
+
+    # 2. 秒付き日時 (YYYY/MM/DD AM/PM HH:MM:SS)
+    parsed_sec = parse_timecode_sec_text(manual_clean)
+    if parsed_sec is not None:
+        year, month, day, ampm, hour, minute, second = parsed_sec
+        h24 = hour % 12 + (12 if ampm == "PM" else 0)
+        year = max(1, min(9999, year))
+        month = max(1, min(12, month))
+        day = max(1, min(calendar.monthrange(year, month)[1], day))
+        dt = datetime(year, month, day, h24, max(0, min(59, minute)), max(0, min(59, second)))
+        return ("datetime_sec", dt, format_photo_timecode_sec(dt))
+
+    # 3. 分単位日時 (YYYY/MM/DD AM/PM HH:MM)
+    parsed_min = parse_timecode_text(manual_clean)
+    if parsed_min is not None:
+        year, month, day, ampm, hour, minute = parsed_min
+        h24 = hour % 12 + (12 if ampm == "PM" else 0)
+        year = max(1, min(9999, year))
+        month = max(1, min(12, month))
+        day = max(1, min(calendar.monthrange(year, month)[1], day))
+        dt = datetime(year, month, day, h24, max(0, min(59, minute)))
+        return ("datetime_min", dt, format_photo_timecode(dt))
+
+    # 4. 時刻のみ HH:MM:SS
+    parsed_clock = parse_clock_sec_text(manual_clean)
+    if parsed_clock is not None:
+        h, m_val, s = parsed_clock
+        init_smpte = (h, m_val, s, 0)
+        init_text = f"{h:02d}:{m_val:02d}:{s:02d}:00"
+        return ("smpte", init_smpte, init_text)
+
+    # 5. 上記以外の自由文字列 (固定表示)
+    return ("static", None, manual_clean)
+
+
+def _compute_frame_timecode(
+    kind: str,
+    base_val: Any,
+    initial_text: str,
+    frame_idx: int,
+    fps: float,
+) -> str:
+    """フレーム番号と進行モードに応じたタイムコード文字列を算出する。"""
+    if kind == "static" or fps <= 0.0:
+        return initial_text
+
+    if kind == "smpte":
+        h, m, s, f = base_val
+        return advance_smpte_timecode(h, m, s, f, frame_idx, fps)
+    elif kind in ("datetime_sec", "now_sec"):
+        elapsed_sec = frame_idx / float(fps)
+        return format_photo_timecode_sec(base_val + timedelta(seconds=elapsed_sec))
+    elif kind in ("datetime_min", "now"):
+        elapsed_sec = frame_idx / float(fps)
+        return format_photo_timecode(base_val + timedelta(seconds=elapsed_sec))
+    return initial_text
+
+
+def _resolve_base_datetime(mode: str, manual_text: str) -> datetime | None:
+    """タイムコード基準時刻を解決する（後方互換用）。"""
+    kind, val, _ = _resolve_timecode_info(mode, manual_text)
+    if isinstance(val, datetime):
+        return val
+    return None
 
 
 def build_overlay_config_from_params(
@@ -332,12 +463,8 @@ def build_overlay_config_from_params(
         else:
             logger.warning("[RecFrameOverlay] custom_dot_path が無効または見つかりません: %s (dot_style を使用)", direct_dot)
 
-    base_dt = _resolve_base_datetime(tc_mode, str(timecode_text))
-    base_tc_text = (
-        format_photo_timecode(base_dt)
-        if tc_mode == "now" and base_dt is not None
-        else str(timecode_text)
-    )
+    tc_kind, tc_val, base_tc_text = _resolve_timecode_info(tc_mode, str(timecode_text))
+    base_dt = tc_val if isinstance(tc_val, datetime) else None
 
     try:
         shift_lvl = int(override_shift_level)
@@ -406,7 +533,15 @@ def build_overlay_config_from_params(
         arm_len_ratio=a_ratio,
         bg_box_opacity=box_opacity,
     )
-    return base_config, effect_params, c_key, base_tc_text, base_dt
+    return OverlayBuildResult(
+        base_config=base_config,
+        effect_params=effect_params,
+        c_key=c_key,
+        base_tc_text=base_tc_text,
+        base_dt=base_dt,
+        tc_kind=tc_kind,
+        tc_val=tc_val,
+    )
 
 
 def render_overlay_preview_pil(
@@ -450,7 +585,7 @@ def _get_common_required_inputs() -> dict[str, Any]:
         "show_cross": ("BOOLEAN", {"default": False}),
         # 6. 日時タイムコード (Timecode)
         "show_timecode": ("BOOLEAN", {"default": False}),
-        "timecode_mode": (list(TIMECODE_MODE_MAP.keys())[:2], {"default": "manual (手入力テキスト)"}),
+        "timecode_mode": (TIMECODE_CHOICES_IMAGE, {"default": "manual (手入力テキスト)"}),
         "timecode_text": ("STRING", {"default": "2026/11/01 PM 08:30", "multiline": False}),
     }
 
@@ -496,7 +631,10 @@ def _render_and_composite(
         # 入力画像が未接続の場合は指定解像度・フレーム数の黒背景を生成して単体動作
         image = torch.zeros((batch_size, empty_h, empty_w, 3), dtype=torch.float32)
 
-    base_config, effect_params, c_key, base_tc_text, base_dt = build_overlay_config_from_params(params)
+    build_res = build_overlay_config_from_params(params)
+    base_config, effect_params, c_key, base_tc_text, base_dt = build_res
+    tc_kind = getattr(build_res, "tc_kind", "static")
+    tc_val = getattr(build_res, "tc_val", base_dt)
 
     show_rec = params.get("show_rec", True)
     try:
@@ -511,14 +649,26 @@ def _render_and_composite(
     except (ValueError, TypeError):
         advance_timecode_fps = 0.0
 
+    # 外部 fps 入力ピンが接続されている場合はウィジェット値より優先して上書き
+    raw_input_fps = params.get("fps")
+    if is_video and raw_input_fps is not None and not isinstance(raw_input_fps, bool):
+        try:
+            val_fps = float(raw_input_fps)
+            if val_fps > 0.0:
+                advance_timecode_fps = val_fps
+        except (ValueError, TypeError):
+            pass
+
     show_timecode = params.get("show_timecode", False)
-    advance_tc = is_video and bool(show_timecode) and advance_timecode_fps > 0.0 and base_dt is not None
+    advance_tc = is_video and bool(show_timecode) and advance_timecode_fps > 0.0 and tc_kind != "static"
 
     batch_size, h, w, channels = image.shape
     device = image.device
     s = min(w, h)
 
     # (赤丸点灯, タイムコード文字列) ごとに描画済みオーバーレイをキャッシュする。
+    # 毎フレーム変化するタイムコードでも VRAM/RAM が肥大化しないよう上限 (32) を設定。
+    MAX_CACHE_SIZE = 32
     overlay_cache: dict[tuple[bool, str], torch.Tensor] = {}
 
     def get_overlay(dot_visible: bool, tc_text: str) -> torch.Tensor:
@@ -532,6 +682,11 @@ def _render_and_composite(
             overlay_pil = apply_custom_ui_effects(overlay_pil, s=s, color=c_key, **effect_params)
         rgba_t, _ = pil_rgba_to_tensor_and_mask(overlay_pil)
         rgba_t = rgba_t.to(device=device, dtype=torch.float32)
+
+        if len(overlay_cache) >= MAX_CACHE_SIZE:
+            first_key = next(iter(overlay_cache))
+            del overlay_cache[first_key]
+
         overlay_cache[key] = rgba_t
         return rgba_t
 
@@ -560,8 +715,9 @@ def _render_and_composite(
 
             frame_tc_text = base_tc_text
             if advance_tc:
-                elapsed_sec = idx / float(advance_timecode_fps)
-                frame_tc_text = format_photo_timecode(base_dt + timedelta(seconds=elapsed_sec))  # type: ignore[operator]
+                frame_tc_text = _compute_frame_timecode(
+                    tc_kind, tc_val, base_tc_text, idx, advance_timecode_fps
+                )
 
             ov = get_overlay(dot_visible, frame_tc_text)
             alpha = ov[..., 3:4]
@@ -593,7 +749,7 @@ class RecFrameImageOverlayNode:
     @classmethod
     def IS_CHANGED(cls, **kwargs: Any) -> Any:
         mode = TIMECODE_MODE_MAP.get(kwargs.get("timecode_mode", ""), "manual")
-        if kwargs.get("show_timecode") and mode == "now":
+        if kwargs.get("show_timecode") and mode in ("now", "now_sec"):
             return float("nan")
         return False
 
@@ -641,12 +797,13 @@ class RecFrameVideoOverlayNode:
             "show_cross": ("BOOLEAN", {"default": False}),
             # 6. 日時タイムコード (Timecode)
             "show_timecode": ("BOOLEAN", {"default": True}),
-            "timecode_mode": (list(TIMECODE_MODE_MAP.keys())[:2], {"default": "now (現在時刻を自動取得)"}),
+            "timecode_mode": (TIMECODE_CHOICES_VIDEO, {"default": "now (現在時刻を自動取得)"}),
             "timecode_text": ("STRING", {"default": "2026/11/01 PM 08:30", "multiline": False}),
         }
 
         optional_inputs: dict[str, Any] = {
             "images": ("IMAGE",),
+            "fps": ("FLOAT", {"forceInput": True}),
             "margin_ratio": ("FLOAT", {"default": 0.020, "min": 0.0, "max": 0.20, "step": 0.002}),
             "arm_len_ratio": ("FLOAT", {"default": 0.15, "min": 0.02, "max": 0.45, "step": 0.01}),
             "bg_box_opacity": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.05}),
@@ -666,7 +823,7 @@ class RecFrameVideoOverlayNode:
     @classmethod
     def IS_CHANGED(cls, **kwargs: Any) -> Any:
         mode = TIMECODE_MODE_MAP.get(kwargs.get("timecode_mode", ""), "manual")
-        if kwargs.get("show_timecode") and mode == "now":
+        if kwargs.get("show_timecode") and mode in ("now", "now_sec"):
             return float("nan")
         return False
 
@@ -674,10 +831,13 @@ class RecFrameVideoOverlayNode:
         self,
         images: torch.Tensor | None = None,
         image: torch.Tensor | None = None,
+        fps: float | int | None = None,
         **kwargs: Any,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         target_tensor = images if images is not None else image
         kwargs.setdefault("empty_frames", 24)
+        if fps is not None:
+            kwargs["fps"] = fps
         return _render_and_composite(target_tensor, kwargs, is_video=True)
 
 
@@ -693,6 +853,7 @@ class RecFrameOverlayNode:
     def INPUT_TYPES(cls) -> dict[str, Any]:
         optional_inputs: dict[str, Any] = {
             "image": ("IMAGE",),
+            "fps": ("FLOAT", {"forceInput": True}),
             "margin_ratio": ("FLOAT", {"default": MARGIN_RATIO, "min": 0.0, "max": 0.20, "step": 0.002}),
             "arm_len_ratio": ("FLOAT", {"default": ARM_LEN_RATIO, "min": 0.02, "max": 0.45, "step": 0.01}),
             "bg_box_opacity": ("FLOAT", {"default": 0.10, "min": 0.0, "max": 1.0, "step": 0.05}),
@@ -712,15 +873,18 @@ class RecFrameOverlayNode:
     @classmethod
     def IS_CHANGED(cls, **kwargs: Any) -> Any:
         mode = TIMECODE_MODE_MAP.get(kwargs.get("timecode_mode", ""), "manual")
-        if kwargs.get("show_timecode") and mode == "now":
+        if kwargs.get("show_timecode") and mode in ("now", "now_sec"):
             return float("nan")
         return False
 
     def apply_overlay(
         self,
         image: torch.Tensor | None = None,
+        fps: float | int | None = None,
         **kwargs: Any,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        if fps is not None:
+            kwargs["fps"] = fps
         return _render_and_composite(image, kwargs, is_video=True)
 
     # 互換エイリアスメソッド

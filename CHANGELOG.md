@@ -5,6 +5,27 @@
 
 ---
 
+## [1.1.0] - 2026-11-02
+
+### 外部FPS自動同期 & タイムコード拡張 (Video FPS Sync & SMPTE Timecode)
+- **外部 `fps` 入力ソケットの新設 (`RecFrameVideoOverlayNode` / `RecFrameOverlayNode`)**:
+  - `forceInput: True` の `fps` 入力ピンを新設（ウィジェット順序21個を一切崩さず100%後方互換を維持）。
+  - `GetVideoComponents` や動画生成AIノード（Wan 16fps, MiniMax 24fps, AnimateDiff 8/16fps 等）の FPS 出力を直結することで、ノード内のタイムコード進行と赤丸点滅が動画のネイティブ再生速度に自動完全同期。
+- **タイムコード書式の拡張（秒表示 `:SS` ＆ SMPTE `:FF` カウンター対応）**:
+  - `timecode_mode` の選択肢を拡充：
+    - `now_sec (現在時刻・秒単位)`: `YYYY/MM/DD AM/PM HH:MM:SS` 形式で1秒ごとにカウントアップ。
+    - `smpte (フレーム 00:00:00:00)`: 毎フレーム `FF` カウンターが正確にインクリメントし、動画FPSに達すると秒が繰り上がるSMPTE規格のタイムコード進行をサポート。
+    - `manual (手入力テキスト)`: 入力テキストから書式（分単位、秒付き、SMPTE `HH:MM:SS:FF`、時刻 `HH:MM:SS`、または固定文字列）を自動判別して適切にカウントアップ。
+- **フレームキャッシュ上限とメモリ保護 (`overlay_cache`)**:
+  - 毎フレーム変化するタイムコードでも VRAM/RAM が肥大化しないよう、`_render_and_composite` 内の `overlay_cache` に上限（32件）を設け、FIFOで古いフレームオーバーレイを安全に自動回収。
+- **公式動画ワークフローの更新 & ベストプラクティス案内**:
+  - `GetVideoComponents` の `fps` 出力を `RecFrameVideoOverlay` の `fps` 入力ピンへ自動結線。
+  - ガイドNoteおよびドキュメントに **「動画パイプラインの鉄則: オーバーレイは一番最後に配置する（Overlay Belongs Last）」** を明記。フレーム補間（RIFE等）やAIアップスケールの前に配置することによる文字の滲み（smear）やタイムコードのズレを防止する注意喚起を追加。
+- **自動テストの拡充**:
+  - 外部 `fps` 入力上書きテスト、SMPTEフレーム繰り上がりテスト、秒付き日時進行テスト、キャッシュ上限テスト（計42テスト）を追加し全件パスを確認。
+
+---
+
 ## [1.0.0] - 2026-11-02
 
 ### ワークフローの日英完全分離 (Official Workflows Bilingual Separation)

@@ -563,11 +563,18 @@ def parse_exif_datetimestr(value: str | bytes | None) -> datetime | None:
         return None
 
 
-def format_photo_timecode(dt: datetime) -> str:
-    """撮影日時をタイムコード書式 `YYYY/MM/DD AM/PM HH:MM` に整形する。"""
+def format_photo_timecode(dt: datetime, include_seconds: bool = False) -> str:
+    """撮影日時をタイムコード書式 `YYYY/MM/DD AM/PM HH:MM` (または秒付き `:SS`) に整形する。"""
     ampm = "AM" if dt.hour < 12 else "PM"
     h12 = dt.hour % 12 or 12
+    if include_seconds:
+        return f"{dt.year:04d}/{dt.month:02d}/{dt.day:02d} {ampm} {h12:02d}:{dt.minute:02d}:{dt.second:02d}"
     return f"{dt.year:04d}/{dt.month:02d}/{dt.day:02d} {ampm} {h12:02d}:{dt.minute:02d}"
+
+
+def format_photo_timecode_sec(dt: datetime) -> str:
+    """撮影日時をタイムコード書式 `YYYY/MM/DD AM/PM HH:MM:SS` に整形する。"""
+    return format_photo_timecode(dt, include_seconds=True)
 
 
 def photo_timecode_text(

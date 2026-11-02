@@ -2,7 +2,7 @@
   "id": "rec-frame-video-batch-workflow-ja",
   "revision": 0,
   "last_node_id": 21,
-  "last_link_id": 7,
+  "last_link_id": 8,
   "nodes": [
     {
       "id": 10,
@@ -24,7 +24,7 @@
         "Node name for S&R": "Note"
       },
       "widgets_values": [
-        "【動画・バッチフレーム用 REC枠合成ワークフロー】\n\n動画ファイル (.mp4 / .webm 等) を読み込み、ファインダー枠・赤丸REC点滅・\nリアルタイム進行タイムコードをオーバーレイ合成して動画出力します。\n\n■ 動画の指定・読み込み:\n- '2. 入力動画 & 分割' グループの 'Load Video' で動画ファイルを指定（ドラッグ＆ドロップまたは選択）。\n- 'Get Video Components' がフレーム画像・音声・FPSを自動抽出して後続へ渡します。\n\n■ 設定済みの動画用パラメータ:\n- blink_red_dot_interval: 24\n  ・赤丸RECマークの点滅間隔 (フレーム数)\n  ・24fps設定時、24フレーム (1.0秒) ごとに点灯と消灯を繰り返します。\n  ・消灯時もレイアウト崩れや文字ズレは起きません。\n- advance_timecode_fps: 24.0\n  ・フレーム進行に伴うタイムコード秒数の自動加算 FPS\n  ・24フレーム経過するごとにタイムコードが1秒ずつリアルに進みます。\n- timecode_mode: 'now (現在時刻を自動取得)'\n  ・撮影開始日時を現在時刻から自動取得し、秒単位でカウントアップします。\n\n■ リアルタイム枠プレビュー:\n- RecFrameVideoOverlay 直下の 'Preview REC Overlay' で、Queue を押さずに枠の太さやフォントをその場でダイナミック確認できます。\n\n■ 動画の保存 & 出力:\n- 'Create Video' と 'Save Video' により、元の音声とフレームレートを維持したまま、完成動画 (MP4等) として自動保存されます。"
+        "【動画・バッチフレーム用 REC枠合成ワークフロー】\n\n動画ファイル (.mp4 / .webm 等) を読み込み、ファインダー枠・赤丸REC点滅・\nリアルタイム進行タイムコードをオーバーレイ合成して動画出力します。\n\n■ 重要: パイプライン接続順序 (Overlay belongs last):\n- アップスケール (Upscale) やフレーム補間 (RIFE / FILM 等) を使用する場合は、\n  必ずそれらの『後』（動画保存ノードの直前）に RecFrameVideoOverlay を配置してください。\n- オーバーレイの後に補間やアップスケールを挟むと、HUD文字の滲み (smear) や\n  フレームレート変更に伴うタイムコード進行の狂いが発生します。\n\n■ FPS 自動同期 (Wan / MiniMax / AnimateDiff 等の不一致防止):\n- 'Get Video Components' から RecFrameVideoOverlay の 'fps' 入力ピンへ直結されているため、\n  動画のフレームレート (16fps, 24fps, 25fps, 30fps 等) に自動追従します。\n- 手動指定する場合は 'fps' ピンを外し、advance_timecode_fps で調整してください。\n\n■ タイムコードの秒進行 (:SS) ＆ SMPTE (:FF) カウンター:\n- timecode_mode で 'now_sec (秒単位)' や 'smpte (00:00:00:00)' を選択すると、\n  数秒の短尺動画でもリアルタイムに数値がカウントアップします。\n\n■ 設定済みの動画用パラメータ:\n- blink_red_dot_interval: 24\n  ・赤丸RECマークの点滅間隔 (フレーム数)\n  ・24fps設定時、24フレーム (1.0秒) ごとに点灯と消灯を繰り返します。\n  ・消灯時もレイアウト崩れや文字ズレは起きません。\n- advance_timecode_fps: 24.0\n  ・fps 入力ピン未接続時のタイムコード進行フォールバック FPS\n\n■ リアルタイム枠プレビュー:\n- RecFrameVideoOverlay 直下の 'Preview REC Overlay' で、Queue を押さずに枠の太さやフォントをその場でダイナミック確認できます。\n\n■ 動画の保存 & 出力:\n- 'Create Video' と 'Save Video' により、元の音声とフレームレートを維持したまま、完成動画 (MP4等) として自動保存されます。"
       ],
       "color": "#233",
       "bgcolor": "#355"
@@ -111,7 +111,8 @@
           "type": "FLOAT",
           "slot_index": 2,
           "links": [
-            5
+            5,
+            8
           ],
           "localized_name": "fps"
         },
@@ -156,6 +157,12 @@
           "type": "IMAGE",
           "link": 2,
           "localized_name": "images"
+        },
+        {
+          "name": "fps",
+          "type": "FLOAT",
+          "link": 8,
+          "localized_name": "fps"
         }
       ],
       "outputs": [
@@ -501,6 +508,14 @@
       21,
       0,
       "VIDEO"
+    ],
+    [
+      8,
+      11,
+      2,
+      2,
+      1,
+      "FLOAT"
     ]
   ],
   "groups": [

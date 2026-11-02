@@ -44,8 +44,9 @@
 
 ### 2. `REC Frame (Video) [動画用]` (`RecFrameVideoOverlay`)
 動画・連続フレームバッチ特化ノード。画像用の基本設定に加え、以下の動画専用機能を完備しています：
+- **外部FPS自動同期 (`fps` 入力ピン)**: `GetVideoComponents` や動画生成ノードの FPS 出力を接続することで、モデル固有のフレームレート（Wan 16fps, MiniMax 24fps等）にタイムコード進行と点滅周期が自動追従。
 - **赤丸REC点滅間隔 (`blink_red_dot_interval`)**: 指定フレーム周期で赤丸を点滅（例: 24fps動画で `12` なら0.5秒点灯/0.5秒消灯）。消灯時もレイアウトを崩さずREC文字と座布団の位置を固定。
-- **タイムコード自動加算 (`advance_timecode_fps`)**: 指定FPSに基づき、フレーム経過に合わせてタイムコードの秒数を自動でカウントアップ。
+- **フレームタイムコード進行 (`timecode_mode`)**: 秒単位加算 (`now_sec`) や毎フレーム正確に進む SMPTEタイムコード (`smpte`: `00:00:00:00`〜) に対応。
 - 入力画像未接続時は `empty_width` / `empty_height` / `empty_frames`（既定 24フレーム）により、**動画用透過連番オーバーレイを単体生成**可能です。
 
 ### 3. `Preview REC Overlay (枠プレビュー)` (`RecFramePreview`)
@@ -76,13 +77,14 @@
 | `battery_bars`| `INT` (0〜4) | `4` | バッテリー残量バー本数（0で空バッテリー・要充電表現） |
 | `show_cross`  | `BOOLEAN` | `False` | 中央フォーカス十字（センタークロス）の表示/非表示 |
 | `show_timecode`| `BOOLEAN` | `False` | タイムコード（日時）の表示/非表示 |
-| `timecode_mode`| `manual`, `now` | `manual` | 手入力文字列 / 現在時刻の自動取得 |
-| `timecode_text`| `STRING` | `""` | 表示日時（`YYYY/MM/DD AM/PM HH:MM` 形式、または自由テキスト） |
+| `timecode_mode`| `manual`, `now`, `now_sec`, `smpte` | `manual` | 手入力 / 現在時刻(分単位) / 現在時刻(秒単位 `:SS`) / SMPTEフレームカウンター (`00:00:00:00`) |
+| `timecode_text`| `STRING` | `""` | 表示日時（`YYYY/MM/DD AM/PM HH:MM[:SS]`、SMPTE `00:00:00:00`、または自由テキスト） |
 
 ### 詳細調整・動画向け設定 (Optional)
 | パラメータ | 型 | 既定値 | 説明 |
 |---|---|---|---|
 | `images` / `image` | `IMAGE` | 未接続可 | 入力画像または動画フレームバッチ（未接続時は単体オーバーレイを生成） |
+| `fps` | `FLOAT` (入力ピン) | 未接続可 | 外部FPS入力。接続時は `advance_timecode_fps` を自動上書きして動画再生速度に完全同期 |
 | `custom_color` | `STRING` | `""` | 任意の色指定（`#00FF50` 等のHEXコード）。指定時は `color` より最優先 |
 | `custom_font_path` | `STRING` | `""` | 外部フォント（`.ttf`, `.otf`, `.ttc`）のフルパス直接指定（再起動不要） |
 | `custom_dot_path` | `STRING` | `""` | 外部マーク画像（透過PNG/WebP）のフルパス直接指定（再起動不要） |
@@ -138,7 +140,12 @@
 2. **2000s レトロデジカメ風ワークフロー** ([`rec_frame_2000s_digicam_workflow_ja.json`](./workflows/rec_frame_2000s_digicam_workflow_ja.json) / [EN](workflows/rec_frame_2000s_digicam_workflow_en.json))
    - `Share Tech Mono` / `VT323` フォント、`retro_effect: 2`、`STBY`表示、バッテリー3本、半透明座布団プリセット
 3. **動画・バッチアニメーションワークフロー** ([`rec_frame_video_batch_workflow_ja.json`](./workflows/rec_frame_video_batch_workflow_ja.json) / [EN](workflows/rec_frame_video_batch_workflow_en.json))
-   - `Load Video` → `RecFrameVideoOverlay` (`blink_red_dot_interval: 24`, `advance_timecode_fps: 24.0`) → `Save Video`
+   - `Load Video` → `RecFrameVideoOverlay` (`blink_red_dot_interval: 24`, `GetVideoComponents` からの `fps` 自動同期) → `Save Video`
+
+> [!IMPORTANT]
+> **動画生成パイプラインの鉄則: 「オーバーレイは一番最後に配置する（Overlay Belongs Last）」**  
+> ワークフローに**フレーム補間（RIFE, FILM 等）**や **AIアップスケール（RealESRGAN, NNLatentUpscale 等）**を組み込む場合は、必ずそれらの**後**（`CreateVideo` / 動画保存ノードの直前）に `RecFrameVideoOverlay` を接続してください。  
+> * **理由**: オーバーレイの後にフレーム補間やAIアップスケールを適用すると、前後のフレームから文字や赤丸・四隅枠がモーフィング処理されて滲んだり（smear）、フレーム数が増減してタイムコードの秒数と再生時間がズレてしまいます。オーバーレイをパイプラインの最終合成ステップに置くことで、くっきりシャープで正確なHUDを維持できます。
 
 ---
 
